@@ -17,4 +17,18 @@ class UseType {
   const UseType({this.id, this.useType})
       : assert(id != null),
         assert(useType != null);
+
+  @override
+  String toString() {
+    return "id: $id, useType: $useType";
+  }
+
+  bool operator== (other) {
+    if (other is! UseType) return false;
+    UseType useType = other;
+    return this.id == useType.id && this.useType == useType.useType;
+  }
+
+  @override
+  int get hashCode => super.hashCode;
 }

@@ -1,6 +1,7 @@
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:household_expenses/api_util.dart';
+import 'package:household_expenses/household_edit_page.dart';
 import 'household_add_page.dart';
 import 'scaffold_base.dart';
 
@@ -61,6 +62,9 @@ class _HouseholdListPageState extends State<HouseholdListPage> {
                 child: ListTile(
                   title: Text('${ApiUtil.shared.expensesList[index].name}'),
                   trailing: Text('￥ ${ApiUtil.shared.expensesList[index].yen}'),
+                  onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                      builder: (BuildContext context) => HouseholdEditPage(
+                          ApiUtil.shared.expensesList[index]))),
                 ),
                 background: Container(
                   color: Colors.red,
@@ -96,13 +100,6 @@ class _HouseholdListPageState extends State<HouseholdListPage> {
             child: Align(
               alignment: Alignment.center,
               child: Container(),
-              // child: RaisedButton(
-              //   textColor: Colors.white,
-              //   child: Text("削除"),
-              //   color: Colors.redAccent,
-              //   shape: StadiumBorder(),
-              //   onPressed: () {},
-              // ),
             ),
           ),
         ],

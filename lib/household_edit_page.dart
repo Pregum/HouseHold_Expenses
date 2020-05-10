@@ -8,18 +8,31 @@ import 'use_type.dart';
 import 'api_util.dart';
 import 'expenses.dart';
 
-class HouseholdAddPage extends StatefulWidget {
+class HouseholdEditPage extends StatefulWidget {
+  Expenses _expenses;
+
+  HouseholdEditPage(this._expenses) : assert(_expenses != null);
+
   @override
-  _HouseholdAddPageState createState() => _HouseholdAddPageState();
+  _HouseholdEditPageState createState() => _HouseholdEditPageState(_expenses);
 }
 
-class _HouseholdAddPageState extends State<HouseholdAddPage> {
-  String _name = "スライスチーズ";
-  DateTime _date = DateTime.now();
+class _HouseholdEditPageState extends State<HouseholdEditPage> {
+  Expenses _expenses;
+  String get _name => _expenses.name;
+  set _name(String value) => _expenses.name = value;
+  DateTime get _date => _expenses.dateTime;
+  set _date(DateTime value) => _expenses.dateTime = value;
   String get _formatedDate {
     initializeDateFormatting('ja_JP');
     var formatter = DateFormat('yyyy年MM月dd日', 'ja_JP');
     return formatter.format(_date);
+  }
+
+  _HouseholdEditPageState(Expenses expenses) {
+    _expenses = Expenses(
+        expenses.name, expenses.dateTime, expenses.useType, expenses.yen);
+    _expenses.key = expenses.key;
   }
 
   /// 3桁ごとにカンマで区切った金額
@@ -29,8 +42,10 @@ class _HouseholdAddPageState extends State<HouseholdAddPage> {
     return formatter.format(_yen);
   }
 
-  UseType _useType = UseType.templates.first;
-  int _yen = 0;
+  UseType get _useType => _expenses.useType;
+  set _useType(UseType value) => _expenses.useType;
+  int get _yen => _expenses.yen;
+  set _yen(int value) => _expenses.yen = value;
   final _formKey = GlobalKey<FormState>();
 
   @override
@@ -38,7 +53,7 @@ class _HouseholdAddPageState extends State<HouseholdAddPage> {
     return Scaffold(
       resizeToAvoidBottomPadding: false,
       appBar: AppBar(
-        title: Text('追加'),
+        title: Text('編集 -- ${_expenses.key}'),
       ),
       body: Column(
         children: <Widget>[
@@ -97,6 +112,7 @@ class _HouseholdAddPageState extends State<HouseholdAddPage> {
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: <Widget>[
                       Text("使用用途"),
+                      // Text("${_useType.useType}"),
                       _buildDropdownButton(_useType),
                     ],
                   ),
@@ -188,12 +204,16 @@ class _HouseholdAddPageState extends State<HouseholdAddPage> {
               height: 50,
               margin: EdgeInsets.all(10.0),
               child: RaisedButton(
-                child: Text('追加'),
+                child: Text('変更'),
                 color: Colors.blue,
                 shape: StadiumBorder(),
                 onPressed: () {
-                  ApiUtil.shared
-                      .pushExpenses(Expenses(_name, _date, _useType, _yen));
+                  print('update... ${this._expenses}');
+                  this.widget._expenses.name = this._expenses.name;
+                  this.widget._expenses.dateTime = this._expenses.dateTime;
+                  this.widget._expenses.useType = this._expenses.useType;
+                  this.widget._expenses.yen = this._expenses.yen;
+                  ApiUtil.shared.update(this._expenses);
                   Navigator.of(context).pop();
                 },
               ),
@@ -211,7 +231,7 @@ class _HouseholdAddPageState extends State<HouseholdAddPage> {
       hint: const Text('使用用途'),
       onChanged: (UseType newValue) {
         setState(() {
-          _useType = newValue;
+          this._expenses.useType = newValue;
         });
       },
       items: UseType.templates.map<DropdownMenuItem<UseType>>((UseType value) {

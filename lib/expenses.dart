@@ -16,7 +16,11 @@ class Expenses {
       : key = snapshot.key,
         name = snapshot.value['name'],
         dateTime = DateTime.parse(snapshot.value['datetime']),
-        useType = UseType(id: 0, useType: snapshot.value['use-type']),
+        useType = UseType(
+            id: UseType.templates.firstWhere((UseType useType) {
+              return useType.useType == snapshot.value['use-type'];
+            }, orElse: () => UseType.templates[0]).id,
+            useType: snapshot.value['use-type']),
         yen = int.tryParse(snapshot.value['yen']) ?? -100;
 
   Map<String, Object> toJson() {

@@ -15,6 +15,10 @@ class ApiUtil {
     mainReference.push().set(expenses.toJson());
   }
 
+  void update(Expenses expenses) {
+    mainReference.child(expenses.key).update(expenses.toJson());
+  }
+
   void removeExpenses(Expenses expenses) {
     mainReference.child(expenses.key).remove();
   }
