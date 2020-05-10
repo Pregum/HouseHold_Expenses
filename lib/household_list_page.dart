@@ -1,9 +1,14 @@
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
-import 'package:household_expenses/api_util.dart';
-import 'package:household_expenses/household_edit_page.dart';
+import 'package:collection/collection.dart';
+import 'package:intl/intl.dart';
+import 'package:intl/date_symbol_data_local.dart';
+
+import 'api_util.dart';
+import 'expenses.dart';
 import 'household_add_page.dart';
 import 'scaffold_base.dart';
+import 'sticky_header.dart';
 
 class HouseholdListPage extends StatefulWidget {
   @override
@@ -34,6 +39,19 @@ class _HouseholdListPageState extends State<HouseholdListPage> {
     });
   }
 
+  String _toString(DateTime date) {
+    initializeDateFormatting('ja_JP');
+    var formatter = DateFormat('yyyy年MM月dd日', 'ja_JP');
+    return formatter.format(date);
+  }
+
+  Map<DateTime, List<Expenses>> _groupByDateTime() {
+    var newMap =
+        groupBy(ApiUtil.shared.expensesList, (Expenses obj) => obj.dateTime)
+            .map((k, v) => MapEntry(k, v.map((item) => item).toList()));
+    return newMap;
+  }
+
   @override
   Widget build(BuildContext context) {
     return ScaffoldBase(
@@ -57,49 +75,12 @@ class _HouseholdListPageState extends State<HouseholdListPage> {
           ),
           Flexible(
             flex: 5,
-            child: ListView.separated(
-              itemBuilder: (context, index) => Dismissible(
-                child: ListTile(
-                  title: Text('${ApiUtil.shared.expensesList[index].name}'),
-                  trailing: Text('￥ ${ApiUtil.shared.expensesList[index].yen}'),
-                  onTap: () => Navigator.of(context).push(MaterialPageRoute(
-                      builder: (BuildContext context) => HouseholdEditPage(
-                          ApiUtil.shared.expensesList[index]))),
-                ),
-                background: Container(
-                  color: Colors.red,
-                  child: ListTile(
-                    leading: Icon(Icons.delete),
-                  ),
-                ),
-                secondaryBackground: Container(
-                  color: Colors.red,
-                  child: ListTile(
-                    trailing: Icon(Icons.delete),
-                  ),
-                ),
-                onDismissed: (direction) {
-                  ApiUtil.shared
-                      .removeExpenses(ApiUtil.shared.expensesList[index]);
-                  Scaffold.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('削除しました。'),
-                    ),
-                  );
-                },
-                key: UniqueKey(),
-              ),
-              separatorBuilder: (BuildContext context, int index) => Divider(
-                color: Colors.black,
-              ),
-              itemCount: ApiUtil.shared.expensesList.length,
-            ),
-          ),
-          Flexible(
-            flex: 1,
-            child: Align(
-              alignment: Alignment.center,
-              child: Container(),
+            child: CustomScrollView(
+              slivers: _groupByDateTime()
+                  .entries
+                  .map((entry) => StickyHeader(
+                      expenses: entry.value, headerText: _toString(entry.key)))
+                  .toList(),
             ),
           ),
         ],
