@@ -1,10 +1,12 @@
 import 'package:collection/collection.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:household_expenses/expenses.dart';
 import 'package:household_expenses/indicator.dart';
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:lite_rolling_switch/lite_rolling_switch.dart';
 import 'package:pie_chart/pie_chart.dart';
 
 import 'api_util.dart';
@@ -39,6 +41,14 @@ class _TopPageState extends State<TopPage> {
   /// 支出の総額
   int spending = 0;
   Map<String, double> eachSpending;
+  bool needDisplayDaySpending = false;
+  double get divide {
+    var now = DateTime.now();
+    var firstDayInCurrentMonth = DateTime(now.year, now.month, 1);
+    var nextMonth = DateTime(now.year, now.month + 1, 1);
+    var diffDays = nextMonth.difference(firstDayInCurrentMonth);
+    return this.needDisplayDaySpending ? diffDays.inDays.toDouble() : 1.0;
+  }
 
   @override
   void initState() {
@@ -116,9 +126,28 @@ class _TopPageState extends State<TopPage> {
             Divider(color: Colors.grey),
             Flexible(
               flex: 1,
-              fit: FlexFit.tight,
-              child: Container(
-                color: Colors.lightBlue,
+              fit: FlexFit.loose,
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: LiteRollingSwitch(
+                  textSize: 16,
+                  animationDuration: Duration(milliseconds: 200),
+                  value: this.needDisplayDaySpending,
+                  colorOff: Colors.grey,
+                  colorOn: Colors.blueAccent,
+                  iconOff: FontAwesomeIcons.calendarAlt,
+                  iconOn: FontAwesomeIcons.calendarDay,
+                  onTap: () => setState(() => this.needDisplayDaySpending =
+                      !this.needDisplayDaySpending),
+                  onChanged: (bool state) {
+                    print('changed state -- $state');
+                    print('divide -- $divide');
+                  },
+                  // onChanged: (bool state) =>
+                  //     setState(() => this.needDisplayDaySpending = state),
+                  textOn: '日割り',
+                  textOff: '総額',
+                ),
               ),
             ),
             if (ApiUtil.shared.expensesList.isNotEmpty)
@@ -130,6 +159,12 @@ class _TopPageState extends State<TopPage> {
                   chartType: ChartType.disc,
                   showChartValuesInPercentage: true,
                   chartValueBackgroundColor: Colors.blue,
+                  colorList: [
+                    Color(0xff0293ee),
+                    Color(0xfff8b250),
+                    Color(0xff845bef),
+                    Color(0xff13d38e),
+                  ],
                 ),
               ),
             Flexible(
@@ -152,9 +187,9 @@ class _TopPageState extends State<TopPage> {
                         Expanded(
                           child: Container(),
                         ),
-                        if (this.eachSpending != null )
+                        if (this.eachSpending != null)
                           Text(
-                              '￥${_toCommaSpending(this.eachSpending[UseType.templates[0].useType])}'),
+                              '￥${_toCommaSpending(this.eachSpending[UseType.templates[0].useType] / this.divide)}'),
                       ],
                     ),
                   ),
@@ -174,7 +209,7 @@ class _TopPageState extends State<TopPage> {
                         ),
                         if (this.eachSpending != null)
                           Text(
-                              '￥${_toCommaSpending(this.eachSpending[UseType.templates[1].useType])}'),
+                              '￥${_toCommaSpending(this.eachSpending[UseType.templates[1].useType] / this.divide)}'),
                       ],
                     ),
                   ),
@@ -194,7 +229,7 @@ class _TopPageState extends State<TopPage> {
                         ),
                         if (this.eachSpending != null)
                           Text(
-                              '￥${_toCommaSpending(this.eachSpending[UseType.templates[2].useType])}'),
+                              '￥${_toCommaSpending(this.eachSpending[UseType.templates[2].useType] / this.divide)}'),
                       ],
                     ),
                   ),
@@ -214,7 +249,7 @@ class _TopPageState extends State<TopPage> {
                         ),
                         if (this.eachSpending != null)
                           Text(
-                              '￥${_toCommaSpending(this.eachSpending[UseType.templates[3].useType])}'),
+                              '￥${_toCommaSpending(this.eachSpending[UseType.templates[3].useType] / this.divide)}'),
                       ],
                     ),
                   ),
