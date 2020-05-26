@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:household_expenses/main.dart';
 import 'household_list_page.dart';
 
 /// ベースとなる土台
 class ScaffoldBase extends StatelessWidget {
   /// タイトル
   final String title;
+
   /// 表示されるWidget
   final Widget child;
+
   /// FloatingActionButton(右下に表示されるあれ)
   final Widget fab;
 
@@ -40,7 +43,9 @@ class ScaffoldBase extends StatelessWidget {
             ListTile(
               title: Text("ダッシュボード"),
               onTap: () {
-                print("ダッシュボード");
+                // print("ダッシュボード");
+                Navigator.of(context).push(MaterialPageRoute(
+                    builder: (BuildContext context) => TopPage()));
               },
             ),
             ListTile(
