@@ -40,6 +40,9 @@ class TopPage extends StatefulWidget {
 class _TopPageState extends State<TopPage> {
   /// 支出の総額
   int spending = 0;
+
+  /// 選択中の月
+  int _selectedMonth = DateTime.now().month;
   Map<String, double> eachSpending;
   bool needDisplayDaySpending = false;
   double get divide {
@@ -62,8 +65,9 @@ class _TopPageState extends State<TopPage> {
     if (ApiUtil.shared.expensesList.isEmpty) return;
     setState(() {
       spending = ApiUtil.shared.expensesList
+          .where((element) => element.dateTime.month == _selectedMonth)
           .map((e) => e.yen)
-          .reduce((value, element) => value + element);
+          .fold(0, (value, element) => value + element);
     });
   }
 
@@ -71,8 +75,9 @@ class _TopPageState extends State<TopPage> {
     if (ApiUtil.shared.expensesList.isEmpty) return;
     setState(() {
       spending = ApiUtil.shared.expensesList
+          .where((element) => element.dateTime.month == _selectedMonth)
           .map((e) => e.yen)
-          .reduce((value, element) => value + element);
+          .fold(0, (value, element) => value + element);
     });
   }
 
@@ -88,15 +93,58 @@ class _TopPageState extends State<TopPage> {
   }
 
   Map<String, double> _groupByUseType() {
-    if (ApiUtil.shared.expensesList.isEmpty) return Map<String, double>();
+    if (ApiUtil.shared.expensesList
+        .where((element) => element.dateTime.month == _selectedMonth)
+        .isEmpty) {
+      this.eachSpending = new Map<String, double>();
+      this.spending = 0;
+      return this.eachSpending;
+    }
     this.eachSpending = groupBy(
             ApiUtil.shared.expensesList, (Expenses obj) => obj.useType.useType)
         .map((key, value) => MapEntry(
             key,
             value
+                .where((element) => element.dateTime.month == _selectedMonth)
                 .map((e) => e.yen.toDouble())
-                .reduce((exp, element) => exp + element)));
+                .fold(0, (exp, element) => exp + element)));
+    this.spending = this
+        .eachSpending
+        .values
+        .fold(0, (previousValue, element) => previousValue + element.round());
     return this.eachSpending;
+  }
+
+  /// 月を選択する為のドロップダウンボタンを作成
+  Widget _buildDropdownButton() {
+    return DropdownButton<int>(
+      dropdownColor: Colors.blue,
+      value: this._selectedMonth,
+      hint: Text(
+        '月選択',
+        style:
+            Theme.of(context).textTheme.headline6.copyWith(color: Colors.white),
+      ),
+      onChanged: (int newValue) {
+        setState(() {
+          this._selectedMonth = newValue;
+        });
+      },
+      iconEnabledColor: Colors.white,
+      items: [
+        for (int i = 1; i <= 12; i++)
+          DropdownMenuItem(
+            child: Text(
+              '$i 月度',
+              style: Theme.of(context)
+                  .textTheme
+                  .headline6
+                  .copyWith(color: Colors.white),
+            ),
+            value: i,
+          ),
+      ],
+    );
   }
 
   @override
@@ -114,11 +162,23 @@ class _TopPageState extends State<TopPage> {
                 padding: const EdgeInsets.symmetric(horizontal: 10.0),
                 child: Row(
                   children: <Widget>[
-                    Text('支出'),
+                    Text(
+                      '$_selectedMonth月の支出',
+                      style: Theme.of(context)
+                          .textTheme
+                          .headline4
+                          .copyWith(color: Colors.black),
+                    ),
                     Expanded(
                       child: Container(),
                     ),
-                    Text('￥${_spendingSplitedComma ?? 0}'),
+                    Text(
+                      '￥${_toCommaSpending((this.spending / this.divide).roundToDouble()) ?? 0}',
+                      style: Theme.of(context)
+                          .textTheme
+                          .headline6
+                          .copyWith(color: Colors.black),
+                    ),
                   ],
                 ),
               ),
@@ -153,20 +213,55 @@ class _TopPageState extends State<TopPage> {
             if (ApiUtil.shared.expensesList.isNotEmpty)
               Flexible(
                 flex: 4,
-                child: PieChart(
-                  dataMap: _groupByUseType(),
-                  showLegends: false,
-                  chartType: ChartType.disc,
-                  showChartValuesInPercentage: true,
-                  chartValueBackgroundColor: Colors.blue,
-                  colorList: [
-                    Color(0xff0293ee),
-                    Color(0xfff8b250),
-                    Color(0xff845bef),
-                    Color(0xff13d38e),
+                child: Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: _groupByUseType().isEmpty
+                      ? Container()
+                      : PieChart(
+                          dataMap: this.eachSpending,
+                          showLegends: false,
+                          chartType: ChartType.disc,
+                          showChartValuesInPercentage: true,
+                          chartValueBackgroundColor: Colors.blue,
+                          colorList: [
+                            Color(0xff0293ee),
+                            Color(0xfff8b250),
+                            Color(0xff845bef),
+                            Color(0xff13d38e),
+                          ],
+                        ),
+                ),
+              ),
+            Flexible(
+              flex: 1,
+              fit: FlexFit.tight,
+              child: Container(
+                padding: EdgeInsets.symmetric(horizontal: 10.0),
+                color: Theme.of(context).primaryColor,
+                child: Row(
+                  children: <Widget>[
+                    Text(
+                      '内訳',
+                      style: Theme.of(context)
+                          .textTheme
+                          .headline4
+                          .copyWith(color: Colors.white),
+                    ),
+                    Expanded(
+                      child: Container(),
+                    ),
+                    // Text(
+                    //   '月選択',
+                    //   style: Theme.of(context)
+                    //       .textTheme
+                    //       .headline6
+                    //       .copyWith(color: Colors.white),
+                    // ),
+                    _buildDropdownButton(),
                   ],
                 ),
               ),
+            ),
             Flexible(
               flex: 4,
               child: Column(
@@ -189,7 +284,7 @@ class _TopPageState extends State<TopPage> {
                         ),
                         if (this.eachSpending != null)
                           Text(
-                              '￥${_toCommaSpending(this.eachSpending[UseType.templates[0].useType] / this.divide)}'),
+                              '￥${this.eachSpending.containsKey(UseType.templates[0].useType) ? (this.eachSpending[UseType.templates[0].useType] / this.divide).round() : 0}'),
                       ],
                     ),
                   ),
@@ -209,7 +304,7 @@ class _TopPageState extends State<TopPage> {
                         ),
                         if (this.eachSpending != null)
                           Text(
-                              '￥${_toCommaSpending(this.eachSpending[UseType.templates[1].useType] / this.divide)}'),
+                              '￥${this.eachSpending.containsKey(UseType.templates[1].useType) ? (this.eachSpending[UseType.templates[1].useType] / this.divide).round() : 0}'),
                       ],
                     ),
                   ),
@@ -229,7 +324,7 @@ class _TopPageState extends State<TopPage> {
                         ),
                         if (this.eachSpending != null)
                           Text(
-                              '￥${_toCommaSpending(this.eachSpending[UseType.templates[2].useType] / this.divide)}'),
+                              '￥${this.eachSpending.containsKey(UseType.templates[2].useType) ? (this.eachSpending[UseType.templates[2].useType] / this.divide).round() : 0}'),
                       ],
                     ),
                   ),
@@ -249,7 +344,7 @@ class _TopPageState extends State<TopPage> {
                         ),
                         if (this.eachSpending != null)
                           Text(
-                              '￥${_toCommaSpending(this.eachSpending[UseType.templates[3].useType] / this.divide)}'),
+                              '￥${this.eachSpending.containsKey(UseType.templates[3].useType) ? (this.eachSpending[UseType.templates[3].useType] / this.divide).round() : 0}'),
                       ],
                     ),
                   ),
